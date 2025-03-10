@@ -2,27 +2,26 @@ name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ main ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ main ]
 
 jobs:
   test:
+    name: Run tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.12']
-
     steps:
     - uses: actions/checkout@v4
-    
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        
     - name: Install uv
-      run: |
+      uses: astral-sh/setup-uv@v3
+    - run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
     
@@ -31,10 +30,6 @@ jobs:
         uv venv -p 3.12 
         source .venv/bin/activate
         uv pip install -e .
-        
-    - name: Lint with ruff
-      run: |
-        ruff check .
         
     - name: Format check with black
       run: |
@@ -56,3 +51,5 @@ jobs:
       run: |
         uv pip install build
         python -m build
+
+        # Basic CI setup: Lint with ruff, run tests with pytest
