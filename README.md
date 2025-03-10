@@ -8,7 +8,7 @@ OLOL (Ollama Load Balancer) is a Python package providing gRPC interfaces with b
 
 ## Overview
 
-This system provides a unified API endpoint that transparently distributes inference requests across multiple Ollama instances running on different hosts. It maintains compatibility with the Ollama API while adding clustering capabilities.
+This system provides a unified API endpoint that transparently distributes inference requests across multiple Ollama instances running on different hosts. It maintains compatibility with the Ollama API while adding clustering capabilities.  
 
 ### Key Features
 
@@ -236,7 +236,6 @@ erDiagram
 ```
 
 ### Request Flow Sequence
-
 ```mermaid
 sequenceDiagram
     participant Client as Client Application
@@ -245,21 +244,21 @@ sequenceDiagram
     participant SessionMgr as Session Manager
     participant Server1 as Inference Server 1
     participant Server2 as Inference Server 2
-    participant Ollama as Ollama CLI
+    participant Ollama as Ollama CLI/HTTP
     
     Client->>+Proxy: POST /api/chat (model: llama2)
     Proxy->>+Registry: Find servers with llama2
     Registry-->>-Proxy: Server1 and Server2 available
     
-    Proxy->>+SessionMgr: Create/Get Session
+    Proxy->>SessionMgr: Create/Get Session
     alt New Session
-        SessionMgr-->>-Proxy: New Session ID
+        SessionMgr-->>Proxy: New Session ID
         Note over Proxy,Server1: Select Server1 (lowest load)
-        Proxy->>+Server1: CreateSession(session_id, "llama2")
+        Proxy->>+Server1: CreateSession(session_id, llama2)
         Server1->>Ollama: ollama run llama2
         Server1-->>-Proxy: Session Created
     else Existing Session
-        SessionMgr-->>-Proxy: Existing Session on Server2
+        SessionMgr-->>Proxy: Existing Session on Server2
         Note over Proxy,Server2: Maintain Session Affinity
     end
     
@@ -290,6 +289,7 @@ sequenceDiagram
     Proxy->>Registry: Update model->server map
     Proxy-->>-Client: Pull Complete Response
 ```
+
 
 ## Installation
 
