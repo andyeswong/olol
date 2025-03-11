@@ -65,5 +65,8 @@ jobs:
         
     - name: Build package
       run: |
-        uv pip install build
-        python -m build
+        uv venv -p 3.12
+        source .venv/bin/activate
+        uv build
+        tools/build-simple.sh
+
