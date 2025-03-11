@@ -32,16 +32,15 @@ jobs:
         uv pip install -e .
         uv pip install ruff --system
         uv pip install black --system
-        uv pip install  ruff --system
-        uv pip install  isort --system
-        uv pip install  mypy --system
-        uv pip install  pytest --system
+        uv pip install ruff --system
+        uv pip install isort --system
+        uv pip install mypy --system 
+        uv pip install pytest --system
         
         
-
     - name: Lint with ruff
       run: |
-        ruff .
+        ruff --check  .
     - name: Format check with black
       run: |
         black --check .
