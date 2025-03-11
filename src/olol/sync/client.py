@@ -1,7 +1,7 @@
 """Synchronous client implementation for Ollama service."""
 
 import logging
-from typing import Dict, List, Optional, Any, Iterator
+from typing import Dict, Iterator, List, Optional
 
 import grpc
 

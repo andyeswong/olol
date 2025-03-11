@@ -1,20 +1,20 @@
 """Server for RPC-based distributed LLM inference."""
 
-import asyncio
 import json
 import logging
 import os
-import subprocess
 import socket
+import subprocess
 import sys
 import threading
 import time
-import requests
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
-from typing import Dict, List, Optional, Any, Union, Tuple, AsyncIterator, Set
 
 import grpc
 import grpc.aio
+import requests
+
 try:
     import numpy as np
 except ImportError:
@@ -25,7 +25,8 @@ try:
     from ..proto import ollama_pb2, ollama_pb2_grpc
 except ImportError:
     try:
-        import ollama_pb2, ollama_pb2_grpc
+        import ollama_pb2
+        import ollama_pb2_grpc
     except ImportError:
         # Will be generated at runtime
         pass

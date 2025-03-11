@@ -2,17 +2,17 @@
 
 __version__ = "0.1.0"
 
+import importlib.util
 import os
 import sys
-import importlib.util
 
 # Check if protobuf modules are generated, generate them if needed
 if not os.path.exists(os.path.join(os.path.dirname(__file__), "ollama_pb2.py")):
     # The .proto file should be included in the package, if it exists, we can generate the pb2 files
     proto_file = os.path.join(os.path.dirname(__file__), "proto", "ollama.proto")
     if os.path.exists(proto_file):
-        import subprocess
         import logging
+        import subprocess
         import warnings
         
         warnings.warn("Protobuf files not found. Attempting to generate them...")

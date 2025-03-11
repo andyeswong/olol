@@ -1,9 +1,10 @@
-import pytest
-import asyncio
-from src.ollama_async_server import AsyncOllamaService
-from src.ollama_async_client import AsyncOllamaClient
-import grpc
 import unittest.mock as mock
+
+import pytest
+
+from src.ollama_async_client import AsyncOllamaClient
+from src.ollama_async_server import AsyncOllamaService
+
 
 @pytest.fixture
 async def service():

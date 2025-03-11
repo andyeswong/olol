@@ -1,20 +1,18 @@
 """HTTP proxy for load balancing Ollama gRPC servers."""
 
+import curses
 import json
 import logging
 import threading
 import time
 import uuid
-import os
-import sys
-import curses
-from typing import Dict, List, Any, Optional, Union, Tuple, Iterator
+from typing import Any, Dict, List, Optional
 
-import grpc
-from flask import Flask, request, jsonify, Response, stream_with_context
+from flask import Flask, Response, jsonify, request, stream_with_context
 
 from .sync.client import OllamaClient
 from .utils.cluster import OllamaCluster
+
 try:
     from .rpc.coordinator import InferenceCoordinator
     DISTRIBUTED_INFERENCE_AVAILABLE = True

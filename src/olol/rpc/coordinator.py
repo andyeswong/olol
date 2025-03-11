@@ -1,17 +1,13 @@
 """Coordinator for distributed LLM inference."""
 
-import json
 import logging
-import time
-import uuid
-import requests
-import subprocess
 import threading
-from typing import Dict, List, Optional, Any, Tuple, Set, Union
-from urllib.parse import urlparse
+from typing import Any, Dict, List, Optional
 
-from .client import RPCClient
+import requests
+
 from ..utils.cluster import TensorPartitioner
+from .client import RPCClient
 from .server import check_ollama_running, ensure_ollama_running
 
 logger = logging.getLogger(__name__)

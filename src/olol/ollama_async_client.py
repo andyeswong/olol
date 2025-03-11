@@ -1,10 +1,10 @@
 import asyncio
-import aiohttp
-from typing import AsyncIterator, Dict, List, Optional
-import grpclib
-from grpclib.client import Channel
-import ollama_pb2
 import logging
+from typing import AsyncIterator, Dict, List, Optional
+
+import grpclib
+import ollama_pb2
+from grpclib.client import Channel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

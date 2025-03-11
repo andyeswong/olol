@@ -6,8 +6,8 @@
 # ]
 # ///
 
-import os
 import hashlib
+import os
 import sys
 import time
 
@@ -97,7 +97,7 @@ def build(ctx):
     # protoc.main expects a list of arguments
     protoc_args = [
         "grpc_tools.protoc",
-        f"-I=src/olol",  # include path
+        "-I=src/olol",  # include path
         "--python_out=src/olol",
         "--grpc_python_out=src/olol",
         proto_file

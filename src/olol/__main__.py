@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import logging
 import sys
-from typing import Optional
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -234,6 +233,7 @@ def main() -> None:
 def run_proxy_entrypoint() -> None:
     """Direct entry point for olol-proxy command."""
     import sys
+
     from .proxy import run_proxy
     
     # Default values
@@ -371,6 +371,7 @@ def run_proxy_entrypoint() -> None:
 def run_server_entrypoint() -> None:
     """Direct entry point for olol-server command."""
     import sys
+
     from .server import serve
     
     # Default values
@@ -411,6 +412,7 @@ def run_server_entrypoint() -> None:
     # Run the server
     if async_mode:
         import asyncio
+
         from .async_impl.server import serve as async_serve
         asyncio.run(async_serve(host, port, ollama_host))
     else:
@@ -420,6 +422,7 @@ def run_server_entrypoint() -> None:
 def run_rpc_server_entrypoint() -> None:
     """Direct entry point for olol-rpc command."""
     import sys
+
     from .rpc.server import serve
     
     # Default values

@@ -1,13 +1,10 @@
 """Cluster management utilities for distributed Ollama instances."""
 
-import json
 import logging
-import random
 import re
 import threading
 import time
-import numpy as np
-from typing import Dict, List, Optional, Tuple, Any, Union, Set
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +99,7 @@ class TensorPartitioner:
         # Handle numpy import gracefully in case it's not available
         try:
             import numpy as np
-            servers, weights = zip(*eligible_servers)
+            servers, weights = zip(*eligible_servers, strict=False)
             weights = np.array(weights) / sum(weights)
             return np.random.choice(servers, p=weights)
         except ImportError:

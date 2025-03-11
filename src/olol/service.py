@@ -1,17 +1,16 @@
 import asyncio
 import json
+import logging
 import subprocess
-from typing import AsyncIterator, Dict, List, Optional
+from concurrent import futures
+
+import aiohttp
 import grpc
 import grpc.aio
-import logging
-from concurrent import futures
-import aiohttp
 
 # Import protobuf modules safely with fallback
 try:
-    from . import ollama_pb2
-    from . import ollama_pb2_grpc
+    from . import ollama_pb2, ollama_pb2_grpc
 except ImportError:
     # Try relative import - might happen during development
     try:

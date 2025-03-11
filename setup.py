@@ -4,9 +4,11 @@
 import os
 import subprocess
 import sys
+
 from setuptools import setup
-from setuptools.command.install import install
 from setuptools.command.develop import develop
+from setuptools.command.install import install
+
 
 def generate_proto_files(package_dir):
     """Generate protocol buffer Python files."""

@@ -1,14 +1,13 @@
 import argparse
 import json
+import logging
+import statistics
+import sys
 import time
 import uuid
-import threading
-import requests
-import statistics
 from concurrent.futures import ThreadPoolExecutor
-import logging
-import os
-import sys
+
+import requests
 from tqdm import tqdm
 
 # Set up logging

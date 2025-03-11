@@ -1,8 +1,10 @@
 async def serve():
-    from .service import OllamaService
-    from . import ollama_pb2_grpc
-    import grpc.aio
     import logging
+
+    import grpc.aio
+
+    from . import ollama_pb2_grpc
+    from .service import OllamaService
     
     logger = logging.getLogger(__name__)
     

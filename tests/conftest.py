@@ -1,6 +1,9 @@
-import pytest
 import asyncio
+
+import pytest
+
 from olol.script.oprotob import build
+
 
 @pytest.fixture
 def event_loop():

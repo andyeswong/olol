@@ -3,11 +3,11 @@
 import asyncio
 import json
 import logging
-from typing import AsyncIterator, Dict, List, Optional
+from typing import AsyncIterator
 
+import aiohttp
 import grpclib
 from grpclib.server import Server
-import aiohttp
 
 from ..proto import ollama_pb2
 

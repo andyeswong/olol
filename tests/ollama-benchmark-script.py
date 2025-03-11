@@ -7,19 +7,18 @@ multiple types of inference workloads and measuring response times,
 throughput, and reliability.
 """
 
-import argparse
 import json
+import logging
+import os
+import statistics
 import time
 import uuid
-import threading
-import requests
-import statistics
-import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-from datetime import datetime
+import requests
 from tqdm import tqdm
 
 # Configure logging

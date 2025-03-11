@@ -1,7 +1,9 @@
 import asyncio
-import time
-from src.ollama_async_client import AsyncOllamaClient
 import statistics
+import time
+
+from src.ollama_async_client import AsyncOllamaClient
+
 
 async def run_benchmark(num_requests=100):
     client = AsyncOllamaClient()

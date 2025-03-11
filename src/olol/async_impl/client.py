@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any, AsyncIterator
+from typing import AsyncIterator, Dict, List, Optional
 
 import grpclib
 from grpclib.client import Channel

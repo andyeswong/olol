@@ -7,7 +7,7 @@ import struct
 import threading
 import time
 import uuid
-from typing import Dict, List, Optional, Any, Tuple, Set, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

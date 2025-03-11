@@ -1,14 +1,14 @@
 import asyncio
 import json
+import logging
 import subprocess
-from typing import AsyncIterator, Dict, List, Optional
+from concurrent import futures
+
+import aiohttp
 import grpc
 import grpc.aio
 import ollama_pb2
 import ollama_pb2_grpc
-import logging
-from concurrent import futures
-import aiohttp
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

@@ -1,12 +1,9 @@
 """Client for RPC-based distributed LLM inference."""
 
-import json
 import logging
-import time
-from typing import Dict, List, Optional, Any, Union, Tuple
+from typing import Any, Dict, List, Optional
 
 import grpc
-import numpy as np
 
 from ..proto import ollama_pb2, ollama_pb2_grpc
 from ..utils.cluster import TensorPartitioner

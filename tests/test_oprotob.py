@@ -1,5 +1,7 @@
 import pytest
+
 from olol.script.oprotob import build
+
 
 def test_build_exists():
     """Test that the build function exists."""

@@ -1,10 +1,9 @@
 """Protocol buffer compilation utilities for OLOL."""
 
-import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional
 
 
 def find_proto_files(base_dir: Optional[str] = None) -> List[str]:

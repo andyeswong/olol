@@ -2,9 +2,9 @@
 """Build a wheel package with protocol buffer files included."""
 
 import os
+import shutil
 import subprocess
 import sys
-import shutil
 from pathlib import Path
 
 
