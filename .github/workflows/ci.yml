@@ -40,7 +40,7 @@ jobs:
         
     - name: Lint with ruff
       run: |
-        ruff --check  .
+        ruff check  .
     - name: Format check with black
       run: |
         black --check .
