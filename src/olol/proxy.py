@@ -783,7 +783,9 @@ def generate():
         def generate_stream():
             client = None
             try:
+                logger.info(f"Creating gRPC client for endpoint: {connection_endpoint}")
                 client = create_grpc_client(connection_endpoint)
+                logger.info(f"Client created successfully: {client}")
                 
                 # Convert the request to the appropriate format
                 prompt = data.get('prompt', '')
@@ -795,12 +797,26 @@ def generate():
                     del options['distributed']
                 
                 # Call the selected server
+                logger.info(f"Calling client.generate with model={model}, prompt='{prompt[:50]}...', stream={stream}")
                 for response in client.generate(model, prompt, stream, options):
-                    yield json.dumps(response) + '\n'
+                    logger.info(f"Got response: done={response.done}, response='{response.response[:50]}...'")
+                    # Convert gRPC response to JSON-serializable dict
+                    response_dict = {
+                        "model": response.model,
+                        "response": response.response,
+                        "done": response.done,
+                        "total_duration": response.total_duration
+                    }
+                    yield json.dumps(response_dict) + '\n'
+                    if response.done:
+                        logger.info("Generation completed")
+                        break
                     
             except Exception as e:
+                import traceback
                 logger.error(f"Error in generate: {str(e)}")
-                error_json = json.dumps({"error": str(e)})
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                error_json = json.dumps({"error": str(e), "traceback": traceback.format_exc()})
                 yield error_json + '\n'
             finally:
                 if client:
@@ -1138,23 +1154,31 @@ def status():
     if cluster is None:
         return jsonify({"error": "Cluster not initialized"}), 500
     
-    # Get base cluster status
-    status_data = cluster.get_cluster_status()
-    
-    # Add distributed inference information
-    status_data["distributed_inference"] = {
-        "available": DISTRIBUTED_INFERENCE_AVAILABLE,
-        "enabled": use_distributed_inference,
-        "active": use_distributed_inference and DISTRIBUTED_INFERENCE_AVAILABLE and coordinator is not None,
-        "server_count": len(coordinator.client.server_addresses) if coordinator else 0
-    }
-    
-    # Add information about models that have been partitioned
-    if coordinator and hasattr(coordinator, "model_partitions"):
-        distributed_models = list(coordinator.model_partitions.keys())
-        status_data["distributed_inference"]["partitioned_models"] = distributed_models
-    
-    return jsonify(status_data)
+    # Simplified status to avoid lock contention
+    try:
+        # Basic info without complex lock operations
+        server_count = len(cluster.server_addresses) if cluster else 0
+        
+        status_data = {
+            "server_count": server_count,
+            "servers": cluster.server_addresses if cluster else [],
+            "distributed_inference": {
+                "available": DISTRIBUTED_INFERENCE_AVAILABLE,
+                "enabled": use_distributed_inference,
+                "active": use_distributed_inference and DISTRIBUTED_INFERENCE_AVAILABLE and coordinator is not None,
+                "server_count": len(coordinator.client.server_addresses) if coordinator else 0
+            },
+            "status": "running"
+        }
+        
+        # Add information about models that have been partitioned
+        if coordinator and hasattr(coordinator, "model_partitions"):
+            distributed_models = list(coordinator.model_partitions.keys())
+            status_data["distributed_inference"]["partitioned_models"] = distributed_models
+        
+        return jsonify(status_data)
+    except Exception as e:
+        return jsonify({"error": f"Status error: {str(e)}", "status": "error"}), 500
 
 @app.route('/api/models', methods=['GET'])
 def list_models():
@@ -1384,6 +1408,39 @@ def run_proxy(host: str = "0.0.0.0", port: int = 8000,
     # We'll start it after discovery service has had a chance to find servers
     health_thread = threading.Thread(target=health_checker, daemon=True)
     
+    # If health checker is disabled, manually populate models once
+    def populate_models_once():
+        """Manually populate the model registry when health checker is disabled."""
+        logger.info("Manually populating model registry (health checker disabled)")
+        for server_address in cluster.server_addresses:
+            try:
+                client = create_grpc_client(server_address)
+                
+                # Get list of models
+                models_response = client.list_models()
+                models = [model.name for model in models_response.models]
+                logger.info(f"Found {len(models)} models on {server_address}: {models}")
+                
+                # Register each model in the cluster
+                with cluster.model_lock:
+                    for model_name in models:
+                        if model_name not in cluster.model_server_map:
+                            cluster.model_server_map[model_name] = []
+                        if server_address not in cluster.model_server_map[model_name]:
+                            cluster.model_server_map[model_name].append(server_address)
+                
+                # Also register with model manager if available
+                try:
+                    for model_name in models:
+                        cluster.model_manager.register_model(model_name, server_address)
+                except Exception as e:
+                    logger.debug(f"Could not register models with model manager: {e}")
+                
+                client.close()
+                
+            except Exception as e:
+                logger.warning(f"Could not populate models from {server_address}: {e}")
+    
     # Start discovery service for auto-discovery with servers
     discovery_service = None
     if enable_discovery:
@@ -1484,7 +1541,7 @@ def run_proxy(host: str = "0.0.0.0", port: int = 8000,
             
             # Now start the health checker thread after discovery has begun
             health_thread.start()
-            logger.info("Health checker started after discovery")
+            logger.info("Health checker started after discovery initialization")
         except ImportError as e:
             logger.warning(f"Auto-discovery not available: {e}")
             # Start health checker anyway since discovery isn't available
@@ -1494,7 +1551,9 @@ def run_proxy(host: str = "0.0.0.0", port: int = 8000,
             # Start health checker anyway since discovery failed
             health_thread.start()
     else:
-        # If discovery is disabled, start health checker immediately
+        # If discovery is disabled, manually populate models first, then start health checker
+        logger.info("Discovery disabled, populating models manually before starting health checker")
+        populate_models_once()
         health_thread.start()
     # Start the console UI if enabled
     if enable_ui:

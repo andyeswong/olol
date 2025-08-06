@@ -77,6 +77,34 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
             context.set_details(error_msg)
             return ollama_pb2.ModelResponse()
     
+    def HealthCheck(self, request, context):
+        """Health check endpoint"""
+        try:
+            # Simple health check by trying to list models
+            result = subprocess.run(
+                ["ollama", "list"],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if result.returncode == 0:
+                return ollama_pb2.HealthCheckResponse(
+                    healthy=True,
+                    status="OK",
+                    version="0.1.0"
+                )
+            else:
+                return ollama_pb2.HealthCheckResponse(
+                    healthy=False,
+                    status=f"Ollama not responding: {result.stderr}",
+                    version="0.1.0"
+                )
+        except Exception as e:
+            return ollama_pb2.HealthCheckResponse(
+                healthy=False,
+                status=f"Health check failed: {str(e)}",
+                version="0.1.0"
+            )
+    
     def CreateSession(self, request, context):
         """Create a new chat session"""
         session_id = request.session_id
@@ -132,8 +160,7 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
                 options_str = json.dumps(dict(request.options))
                 cmd.extend(["--options", options_str])
                 
-            # Format as JSON and stream
-            cmd.extend(["--format", "json"])
+            # Note: --format json not supported in Ollama 0.11.2
                 
             # Prepare messages input
             messages_json = json.dumps({"messages": messages})
@@ -208,7 +235,7 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
             
             # Call ollama with the chat history
             result = subprocess.run(
-                ["ollama", "run", model_name, "--format", "json", "--options", 
+                ["ollama", "run", model_name, "--options", 
                  f'{{"messages": {history_arg}}}'],
                 capture_output=True, text=True, timeout=300
             )
@@ -238,7 +265,7 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
         """List available models"""
         try:
             result = subprocess.run(
-                ["ollama", "list", "--format", "json"],
+                ["ollama", "list"],
                 capture_output=True, text=True, timeout=30
             )
             
@@ -249,25 +276,24 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
                 context.set_details(error_msg)
                 return ollama_pb2.ListResponse(models=[])
             
-            # Parse JSON to create proper ListResponse
-            import json
-            try:
-                models_data = json.loads(result.stdout)
-                model_objects = []
-                for model_data in models_data.get("models", []):
-                    model_obj = ollama_pb2.Model(
-                        name=model_data.get("name", ""),
-                        model_file=model_data.get("model_file", ""),
-                        parameter_size=str(model_data.get("parameter_size", "")),
-                        quantization_level=model_data.get("quantization_level", 0),
-                        template=model_data.get("template", "")
-                    )
-                    model_objects.append(model_obj)
-                return ollama_pb2.ListResponse(models=model_objects)
-            except json.JSONDecodeError:
-                # Fallback to empty list
-                logger.error("Failed to parse model list JSON")
-                return ollama_pb2.ListResponse(models=[])
+            # Parse plain text output (NAME, ID, SIZE, MODIFIED format)
+            model_objects = []
+            lines = result.stdout.strip().split('\n')
+            # Skip header line
+            for line in lines[1:]:
+                if line.strip():
+                    parts = line.split()
+                    if len(parts) >= 3:  # NAME, ID, SIZE at minimum
+                        name = parts[0]
+                        size = parts[2] if len(parts) >= 3 else ""
+                        
+                        model_obj = ollama_pb2.Model(
+                            name=name,
+                            parameter_size=size
+                        )
+                        model_objects.append(model_obj)
+            
+            return ollama_pb2.ListResponse(models=model_objects)
                 
         except Exception as e:
             error_msg = f"Error listing models: {str(e)}"
@@ -403,7 +429,7 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
 
     async def Show(self, request, context):
         """Show model details"""
-        cmd = ["ollama", "show", request.model, "--format", "json"]
+        cmd = ["ollama", "show", request.model]
         try:
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -415,8 +441,14 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
             if process.returncode != 0:
                 raise Exception(stderr.decode())
                 
-            model_info = json.loads(stdout)
-            return ollama_pb2.ShowResponse(**model_info)
+            # Parse plain text output
+            output_text = stdout.decode()
+            model = ollama_pb2.Model(name=request.model)
+            
+            return ollama_pb2.ShowResponse(
+                model=model,
+                modelfile=output_text  # Store the raw output in modelfile field
+            )
             
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
@@ -450,7 +482,7 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
         
         # For sync implementation, use subprocess to call Ollama CLI
         try:
-            cmd = ["ollama", "generate", request.model, request.prompt]
+            cmd = ["ollama", "run", request.model, request.prompt]
             
             # Add options if provided
             if request.options:
@@ -460,9 +492,8 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
             # Add format if provided
             if request.format:
                 cmd.extend(["--format", request.format])
-                
-            # Use JSON format for parsing
-            cmd.extend(["--format", "json"])
+            else:
+                cmd.extend(["--format", "json"])  # Default to JSON for parsing
                 
             process = subprocess.Popen(
                 cmd,
@@ -472,30 +503,58 @@ class OllamaService(ollama_pb2_grpc.OllamaServiceServicer):
                 bufsize=1
             )
             
-            # Stream the responses back to the client
-            for line in iter(process.stdout.readline, ''):
-                if context.is_active():
-                    try:
-                        response_data = json.loads(line)
-                        yield ollama_pb2.GenerateResponse(
-                            model=request.model,
-                            response=response_data.get("response", ""),
-                            done=response_data.get("done", False),
-                            total_duration=response_data.get("total_duration", 0)
-                        )
-                    except json.JSONDecodeError:
-                        # Skip invalid JSON lines
-                        continue
-                else:
-                    process.terminate()
-                    break
-                    
-            # Check for errors
-            return_code = process.wait()
-            if return_code != 0:
-                error_output = process.stderr.read()
+            # Get the complete output from Ollama
+            stdout, stderr = process.communicate()
+            
+            if process.returncode != 0:
+                error_msg = f"Generate failed: {stderr}"
+                logger.error(error_msg)
                 context.set_code(grpc.StatusCode.INTERNAL)
-                context.set_details(f"Generate failed: {error_output}")
+                context.set_details(error_msg)
+                return
+            
+            # Parse the output
+            try:
+                if stdout.strip():
+                    # Try to parse as JSON first
+                    try:
+                        response_data = json.loads(stdout.strip())
+                        # Extract the actual response text from the JSON structure
+                        if isinstance(response_data, dict):
+                            if "arguments" in response_data and isinstance(response_data["arguments"], dict):
+                                # Handle function call format
+                                response_text = str(response_data["arguments"])
+                            elif "response" in response_data:
+                                # Handle streaming format
+                                response_text = response_data["response"]
+                            else:
+                                # Use the whole JSON as text
+                                response_text = json.dumps(response_data)
+                        else:
+                            response_text = str(response_data)
+                    except json.JSONDecodeError:
+                        # If not JSON, use as plain text
+                        response_text = stdout.strip()
+                    
+                    # Yield the response
+                    yield ollama_pb2.GenerateResponse(
+                        model=request.model,
+                        response=response_text,
+                        done=True,
+                        total_duration=1000  # Placeholder duration
+                    )
+                else:
+                    # Empty response
+                    yield ollama_pb2.GenerateResponse(
+                        model=request.model,
+                        response="No response generated",
+                        done=True,
+                        total_duration=1000
+                    )
+            except Exception as e:
+                logger.error(f"Error processing response: {e}")
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(f"Response processing error: {str(e)}")
                 
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
