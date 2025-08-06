@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+
+  olol-server:
+    build: .
+    ports:
+      - "50051:50051"
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    command: python -m olol server --host 0.0.0.0 --port 50051 --ollama-host http://ollama:11434
+    restart: unless-stopped
+
+  olol-proxy:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - olol-server
+    command: python -m olol proxy --host 0.0.0.0 --port 8000 --servers olol-server:50051 --no-discovery
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
