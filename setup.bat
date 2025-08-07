@@ -30,7 +30,15 @@ py -m pip install -r requirements.txt
 
 REM Install PyTorch with GPU support
 echo 🔥 Installing PyTorch with CUDA support...
-py -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+REM For RTX 5090 (Blackwell), use nightly builds with CUDA 12.8
+nvidia-smi | findstr "RTX 509" >nul
+if %errorlevel% == 0 (
+    echo    🎯 RTX 50 series detected - installing nightly PyTorch with CUDA 12.8
+    py -m pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+) else (
+    echo    🔧 Using stable PyTorch with CUDA 12.4
+    py -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+)
 
 REM Install OLOL package
 echo 📦 Installing OLOL...

@@ -35,8 +35,12 @@ cd olol
 # Install core dependencies
 pip install -r requirements.txt
 
-# Install PyTorch with GPU support (RECOMMENDED)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+# Install PyTorch with GPU support
+# IMPORTANT: For RTX 5090 (Blackwell architecture), use CUDA 12.8+ nightly builds
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+
+# OR for older GPUs (RTX 4090 and earlier):
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 # OR for CPU-only (not recommended for performance)
 # pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
@@ -59,6 +63,39 @@ python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); 
 # Test OLOL GPU detection
 python -c "import sys; sys.path.insert(0, 'src'); from olol.__main__ import _auto_detect_device_type; print(f'OLOL detected: {_auto_detect_device_type()}')"
 ```
+
+### 🚨 **SPECIAL NOTES FOR RTX 5090 USERS**
+
+**RTX 5090 Compatibility Issue:**
+The RTX 5090 uses NVIDIA's new **Blackwell architecture** with compute capability **sm_120**. Standard PyTorch releases only support up to **sm_90** (Ada Lovelace), so you'll see this warning:
+
+```
+NVIDIA GeForce RTX 5090 with CUDA capability sm_120 is not compatible with the current PyTorch installation.
+The current PyTorch install supports CUDA capabilities sm_50 sm_60 sm_61 sm_70 sm_75 sm_80 sm_86 sm_90.
+```
+
+**Solutions for RTX 5090:**
+
+1. **PyTorch Nightly (Recommended)** - Official bleeding-edge PyTorch with Blackwell support:
+   ```bash
+   pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+   ```
+
+2. **Community PyTorch Build** - More stable, community-built version:
+   - Download from: https://huggingface.co/w-e-w/torch-2.6.0-cu128.nv
+   - Select files matching your Python version (e.g., 3.12)
+   - Install: `pip install --force-reinstall torch-*.whl torchvision-*.whl`
+
+3. **Wait for Official Release** - PyTorch 2.7+ will include native RTX 5090 support
+
+**Performance Notes:**
+- RTX 5090 provides **~2x performance** over RTX 4090 for LLMs
+- 32GB VRAM enables larger models and batch sizes
+- OLOL will automatically detect and utilize the RTX 5090 once PyTorch is compatible
+
+For detailed technical information, see:
+- [NVIDIA RTX 5090 Migration Guide](https://forums.developer.nvidia.com/t/software-migration-guide-for-nvidia-blackwell-rtx-gpus/321330)
+- [PyTorch Blackwell Tracking Issue](https://github.com/pytorch/pytorch/issues/145949)
 
 ### 4. Download Models (Required)
 ```bash
