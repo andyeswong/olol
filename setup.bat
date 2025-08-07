@@ -28,6 +28,10 @@ REM Install Python dependencies
 echo 📦 Installing Python dependencies...
 py -m pip install -r requirements.txt
 
+REM Install PyTorch with GPU support
+echo 🔥 Installing PyTorch with CUDA support...
+py -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
 REM Install OLOL package
 echo 📦 Installing OLOL...
 py -m pip install -e .

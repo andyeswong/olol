@@ -32,10 +32,14 @@ ollama list  # Should show available models
 git clone https://github.com/andyeswong/olol.git
 cd olol
 
-# Install dependencies
+# Install core dependencies
 pip install -r requirements.txt
-# or if using poetry
-poetry install
+
+# Install PyTorch with GPU support (RECOMMENDED)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# OR for CPU-only (not recommended for performance)
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
 ### 2. Install OLOL Package
@@ -47,7 +51,16 @@ pip install -e .
 python -m olol --version
 ```
 
-### 3. Download Models (Required)
+### 3. Verify GPU Detection (Important!)
+```bash
+# Check if GPU is detected
+python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"CPU only\"}')"
+
+# Test OLOL GPU detection
+python -c "import sys; sys.path.insert(0, 'src'); from olol.__main__ import _auto_detect_device_type; print(f'OLOL detected: {_auto_detect_device_type()}')"
+```
+
+### 4. Download Models (Required)
 ```bash
 # Download at least one model for testing
 ollama pull codestral:22b
@@ -58,7 +71,7 @@ ollama pull llama3.2:3b
 ollama list
 ```
 
-### 4. Generate Protocol Buffers (if needed)
+### 5. Generate Protocol Buffers (if needed)
 ```bash
 # This usually happens automatically, but if needed:
 python -c "from src.olol import *"

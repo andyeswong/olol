@@ -24,6 +24,10 @@ ollama --version
 echo "📦 Installing Python dependencies..."
 python3 -m pip install -r requirements.txt
 
+# Install PyTorch with GPU support
+echo "🔥 Installing PyTorch with CUDA support..."
+python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
 # Install OLOL package
 echo "📦 Installing OLOL..."
 python3 -m pip install -e .
